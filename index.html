@@ -1,1 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Garden 🌱</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --do-bg: #fff1f1;
+      --do-border: #f87171;
+      --do-accent: #ef4444;
+      --do-badge: #ef4444;
+
+      --schedule-bg: #eff6ff;
+      --schedule-border: #60a5fa;
+      --schedule-accent: #3b82f6;
+      --schedule-badge: #3b82f6;
+
+      --delegate-bg: #fffbeb;
+      --delegate-border: #fbbf24;
+      --delegate-accent: #f59e0b;
+      --delegate-badge: #f59e0b;
+
+      --eliminate-bg: #f9fafb;
+      --eliminate-border: #9ca3af;
+      --eliminate-accent: #6b7280;
+      --eliminate-badge: #6b7280;
+
+      --surface: #ffffff;
+      --bg: #f3f4f6;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --radius: 14px;
+      --shadow: 0 2px 16px rgba(0,0,0,0.07);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    header h1 span { color: #22c55e; }
+    header p {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Add Task Bar ── */
+    .add-bar {
+      display: flex;
+      gap: 10px;
+      max-width: 720px;
+      margin: 0 auto 32px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+    }
+    .add-bar input[type="text"] {
+      flex: 1 1 200px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 0.92rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      color: var(--text);
+      background: #fafafa;
+    }
+    .add-bar input[type="text"]:focus { border-color: #6366f1; background: #fff; }
+    .add-bar input[type="text"]::placeholder { color: #9ca3af; }
+
+    .add-bar select {
+      flex: 0 0 auto;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+      background: #fafafa;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+    .add-bar select:focus { border-color: #6366f1; }
+
+    .add-bar button {
+      flex: 0 0 auto;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 22px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .add-bar button:hover { background: #4f46e5; }
+    .add-bar button:active { transform: scale(0.97); }
+
+    /* ── Matrix Grid ── */
+    .matrix {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 18px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 640px) {
+      .matrix { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.5rem; }
+    }
+
+    /* ── Quadrant ── */
+    .quadrant {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
+      border-top: 4px solid transparent;
+      transition: box-shadow 0.2s;
+    }
+    .quadrant.drag-over {
+      box-shadow: 0 0 0 2px #6366f1, var(--shadow);
+    }
+
+    .quadrant[data-q="do"]       { border-color: var(--do-accent);       background: var(--do-bg); }
+    .quadrant[data-q="schedule"] { border-color: var(--schedule-accent);  background: var(--schedule-bg); }
+    .quadrant[data-q="delegate"] { border-color: var(--delegate-accent);  background: var(--delegate-bg); }
+    .quadrant[data-q="eliminate"]{ border-color: var(--eliminate-accent); background: var(--eliminate-bg); }
+
+    .quadrant-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .quadrant-icon { font-size: 1.4rem; line-height: 1; }
+    .quadrant-title-block { flex: 1; }
+    .quadrant-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .quadrant-subtitle {
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      padding: 0 6px;
+      flex-shrink: 0;
+    }
+    .quadrant[data-q="do"]        .badge { background: var(--do-badge); }
+    .quadrant[data-q="schedule"]  .badge { background: var(--schedule-badge); }
+    .quadrant[data-q="delegate"]  .badge { background: var(--delegate-badge); }
+    .quadrant[data-q="eliminate"] .badge { background: var(--eliminate-badge); }
+
+    /* ── Task List ── */
+    .task-list {
+      flex: 1;
+      padding: 12px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 60px;
+    }
+
+    .empty-state {
+      color: #c4c9d4;
+      font-size: 0.82rem;
+      text-align: center;
+      margin: auto;
+      padding: 20px 0;
+      user-select: none;
+    }
+
+    /* ── Task Item ── */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(0,0,0,0.07);
+      border-radius: 9px;
+      padding: 10px 12px;
+      cursor: grab;
+      transition: opacity 0.25s, transform 0.15s, box-shadow 0.15s;
+      user-select: none;
+      backdrop-filter: blur(4px);
+    }
+    .task-item:active { cursor: grabbing; }
+    .task-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.09); transform: translateY(-1px); }
+    .task-item.dragging { opacity: 0.35; transform: scale(0.97); }
+    .task-item.done .task-text {
+      text-decoration: line-through;
+      color: #aab0be;
+    }
+
+    .task-checkbox {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .task-checkbox:hover { border-color: #6366f1; }
+    .task-item.done .task-checkbox {
+      background: #6366f1;
+      border-color: #6366f1;
+    }
+    .task-checkbox svg {
+      display: none;
+      width: 10px;
+      height: 10px;
+    }
+    .task-item.done .task-checkbox svg { display: block; }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .task-delete {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: #c4c9d4;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: color 0.15s, background 0.15s;
+      opacity: 0;
+    }
+    .task-item:hover .task-delete { opacity: 1; }
+    .task-delete:hover { color: #ef4444; background: #fee2e2; }
+
+    /* ── Axis Labels ── */
+    .axis-labels {
+      max-width: 1100px;
+      margin: 0 auto 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      text-align: center;
+    }
+    .axis-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 0;
+      border-radius: 4px;
+    }
+    @media (max-width: 640px) {
+      .axis-labels { display: none; }
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1f2937;
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+      transition: transform 0.3s cubic-bezier(.34,1.4,.64,1);
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Scrollbar */
+    .task-list::-webkit-scrollbar { width: 4px; }
+    .task-list::-webkit-scrollbar-thumb { background: #e2e5eb; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Task <span>Garden</span> 🌱</h1>
+  <p>Focus on what matters — decide, schedule, delegate, or let go.</p>
+</header>
+
+<div class="add-bar">
+  <input type="text" id="taskInput" placeholder="What needs to be done?" maxlength="200" />
+  <select id="quadrantSelect">
+    <option value="do">🔴 Do First</option>
+    <option value="schedule">🔵 Schedule</option>
+    <option value="delegate">🟡 Delegate</option>
+    <option value="eliminate">⚫ Eliminate</option>
+  </select>
+  <button id="addBtn">Add Task</button>
+</div>
+
+<div class="axis-labels">
+  <div class="axis-label">⚡ Urgent</div>
+  <div class="axis-label">💤 Not Urgent</div>
+</div>
+
+<div class="matrix">
+
+  <div class="quadrant" data-q="do">
+    <div class="quadrant-header">
+      <div class="quadrant-icon">🔴</div>
+      <div class="quadrant-title-block">
+        <div class="quadrant-title">Do First</div>
+        <div class="quadrant-subtitle">Urgent · Important</div>
+      </div>
+      <span class="badge" id="badge-do">0</span>
+    </div>
+    <div class="task-list" id="list-do"></div>
+  </div>
+
+  <div class="quadrant" data-q="schedule">
+    <div class="quadrant-header">
+      <div class="quadrant-icon">🔵</div>
+      <div class="quadrant-title-block">
+        <div class="quadrant-title">Schedule</div>
+        <div class="quadrant-subtitle">Not Urgent · Important</div>
+      </div>
+      <span class="badge" id="badge-schedule">0</span>
+    </div>
+    <div class="task-list" id="list-schedule"></div>
+  </div>
+
+  <div class="quadrant" data-q="delegate">
+    <div class="quadrant-header">
+      <div class="quadrant-icon">🟡</div>
+      <div class="quadrant-title-block">
+        <div class="quadrant-title">Delegate</div>
+        <div class="quadrant-subtitle">Urgent · Not Important</div>
+      </div>
+      <span class="badge" id="badge-delegate">0</span>
+    </div>
+    <div class="task-list" id="list-delegate"></div>
+  </div>
+
+  <div class="quadrant" data-q="eliminate">
+    <div class="quadrant-header">
+      <div class="quadrant-icon">⚫</div>
+      <div class="quadrant-title-block">
+        <div class="quadrant-title">Eliminate</div>
+        <div class="quadrant-subtitle">Not Urgent · Not Important</div>
+      </div>
+      <span class="badge" id="badge-eliminate">0</span>
+    </div>
+    <div class="task-list" id="list-eliminate"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────
+  const STORAGE_KEY = 'task-garden-v1';
+  let tasks = [];
+  let draggedId = null;
+
+  function load() {
+    try { tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { tasks = []; }
+  }
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+
+  // ── Render ─────────────────────────────────────────────────────────
+  const QUADRANTS = ['do', 'schedule', 'delegate', 'eliminate'];
+
+  function render() {
+    QUADRANTS.forEach(q => {
+      const list = document.getElementById('list-' + q);
+      const badge = document.getElementById('badge-' + q);
+      const qTasks = tasks.filter(t => t.quadrant === q);
+
+      badge.textContent = qTasks.filter(t => !t.done).length;
+
+      if (qTasks.length === 0) {
+        list.innerHTML = '<div class="empty-state">Drop tasks here</div>';
+      } else {
+        list.innerHTML = '';
+        qTasks.forEach(t => {
+          const el = buildTaskEl(t);
+          list.appendChild(el);
+        });
+      }
+    });
+  }
+
+  function buildTaskEl(task) {
+    const div = document.createElement('div');
+    div.className = 'task-item' + (task.done ? ' done' : '');
+    div.dataset.id = task.id;
+    div.draggable = true;
+
+    div.innerHTML = `
+      <div class="task-checkbox" data-id="${task.id}" title="Mark complete">
+        <svg viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 4L3.8 7L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="task-text">${escHtml(task.text)}</span>
+      <button class="task-delete" data-id="${task.id}" title="Delete">✕</button>
+    `;
+
+    // Checkbox toggle
+    div.querySelector('.task-checkbox').addEventListener('click', e => {
+      e.stopPropagation();
+      toggleDone(task.id);
+    });
+    // Delete
+    div.querySelector('.task-delete').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteTask(task.id);
+    });
+
+    // Drag
+    div.addEventListener('dragstart', e => {
+      draggedId = task.id;
+      setTimeout(() => div.classList.add('dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    div.addEventListener('dragend', () => {
+      div.classList.remove('dragging');
+      draggedId = null;
+    });
+
+    return div;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Actions ────────────────────────────────────────────────────────
+  function addTask(text, quadrant) {
+    tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), text, quadrant, done: false, createdAt: Date.now() });
+    save(); render();
+  }
+  function toggleDone(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) { t.done = !t.done; save(); render(); }
+  }
+  function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    save(); render(); showToast('Task deleted');
+  }
+  function moveTask(id, toQuadrant) {
+    const t = tasks.find(t => t.id === id);
+    if (t && t.quadrant !== toQuadrant) {
+      t.quadrant = toQuadrant;
+      save(); render();
+      const names = { do: 'Do First', schedule: 'Schedule', delegate: 'Delegate', eliminate: 'Eliminate' };
+      showToast('Moved to ' + names[toQuadrant]);
+    }
+  }
+
+  // ── Add Bar ────────────────────────────────────────────────────────
+  const input = document.getElementById('taskInput');
+  const select = document.getElementById('quadrantSelect');
+  const addBtn = document.getElementById('addBtn');
+
+  function handleAdd() {
+    const text = input.value.trim();
+    if (!text) { input.focus(); return; }
+    addTask(text, select.value);
+    input.value = '';
+    input.focus();
+  }
+
+  addBtn.addEventListener('click', handleAdd);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') handleAdd(); });
+
+  // ── Drag & Drop on Quadrants ───────────────────────────────────────
+  document.querySelectorAll('.quadrant').forEach(qEl => {
+    qEl.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      qEl.classList.add('drag-over');
+    });
+    qEl.addEventListener('dragleave', e => {
+      if (!qEl.contains(e.relatedTarget)) qEl.classList.remove('drag-over');
+    });
+    qEl.addEventListener('drop', e => {
+      e.preventDefault();
+      qEl.classList.remove('drag-over');
+      if (draggedId) moveTask(draggedId, qEl.dataset.q);
+    });
+  });
+
+  // ── Toast ──────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────
+  load();
+
+  // Seed with examples if empty
+  if (tasks.length === 0) {
+    tasks = [
+      { id: 'seed1', text: 'Review urgent client proposal', quadrant: 'do', done: false, createdAt: Date.now() },
+      { id: 'seed2', text: 'Plan next quarter roadmap', quadrant: 'schedule', done: false, createdAt: Date.now() },
+      { id: 'seed3', text: 'Reply to non-critical emails', quadrant: 'delegate', done: false, createdAt: Date.now() },
+      { id: 'seed4', text: 'Scroll social media feed', quadrant: 'eliminate', done: false, createdAt: Date.now() },
+    ];
+    save();
+  }
+
+  render();
+</script>
+</body>
+</html>
