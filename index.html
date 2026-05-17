@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Task Garden — Eisenhower Matrix</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -21,7 +22,6 @@
       --accent-slate: #7a8a8e;
       --border: rgba(42,56,40,0.12);
       --shadow: 0 2px 20px rgba(42,56,40,0.08);
-      --shadow-card: 0 1px 8px rgba(42,56,40,0.06);
       --radius: 16px;
       --radius-sm: 10px;
       --radius-pill: 999px;
@@ -35,20 +35,51 @@
       padding: 0 0 80px;
     }
 
+    /* ── Loading overlay ── */
+    #loadingOverlay {
+      position: fixed;
+      inset: 0;
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.3s;
+    }
+    #loadingOverlay.hidden { opacity: 0; pointer-events: none; }
+    .loading-inner {
+      text-align: center;
+    }
+    .loading-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .loading-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    /* ── Sync indicator ── */
+    .sync-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent-sage);
+      display: inline-block;
+      margin-right: 5px;
+      transition: background 0.3s;
+    }
+    .sync-dot.syncing { background: var(--accent-amber); animation: pulse 1s ease-in-out infinite; }
+    .sync-dot.error   { background: var(--accent-rose); }
+
     /* ── Progress bar ── */
     .progress-bar {
       height: 1px;
       background: var(--cream-dark);
       position: relative;
-      width: 100%;
-    }
-    .progress-bar::after {
-      content: '';
-      position: absolute;
-      left: 0; top: 0;
-      height: 100%;
-      width: 18%;
-      background: var(--muted);
     }
     .progress-label {
       position: absolute;
@@ -60,7 +91,6 @@
       font-size: 0.8rem;
       color: var(--muted);
       white-space: nowrap;
-      letter-spacing: 0.01em;
     }
 
     /* ── Top bar ── */
@@ -79,11 +109,10 @@
       font-style: italic;
       font-size: 0.85rem;
       color: var(--muted);
-    }
-    .topbar-stats {
       display: flex;
-      gap: 6px;
+      align-items: center;
     }
+    .topbar-stats { display: flex; gap: 6px; }
     .stat-pill {
       font-size: 0.7rem;
       font-weight: 500;
@@ -91,7 +120,6 @@
       background: var(--cream-dark);
       border-radius: var(--radius-pill);
       padding: 3px 10px;
-      letter-spacing: 0.02em;
     }
     .stat-pill strong { color: var(--forest); }
 
@@ -150,16 +178,9 @@
       transition: border-color 0.2s;
     }
     .add-card-inner input[type="text"]:focus { border-bottom-color: var(--forest); }
-    .add-card-inner input[type="text"]::placeholder {
-      color: var(--muted);
-      font-style: italic;
-    }
-    .q-select {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
+    .add-card-inner input[type="text"]::placeholder { color: var(--muted); font-style: italic; }
+
+    .q-select { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .q-btn {
       padding: 6px 14px;
       border-radius: var(--radius-pill);
@@ -191,13 +212,11 @@
       letter-spacing: 0.04em;
       cursor: pointer;
       transition: opacity 0.15s, transform 0.1s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       white-space: nowrap;
     }
     .add-btn:hover { opacity: 0.85; transform: translateY(-1px); }
     .add-btn:active { transform: translateY(0); }
+    .add-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     /* ── Filter row ── */
     .filter-row {
@@ -222,10 +241,7 @@
       transition: all 0.15s;
     }
     .filter-btn:hover { color: var(--forest); }
-    .filter-btn.active {
-      background: var(--forest);
-      color: var(--cream);
-    }
+    .filter-btn.active { background: var(--forest); color: var(--cream); }
     .clear-btn {
       margin-left: auto;
       padding: 5px 14px;
@@ -241,7 +257,7 @@
     }
     .clear-btn:hover { background: #f5e8e3; }
 
-    /* ── Axis labels ── */
+    /* ── Axis ── */
     .axis-row {
       max-width: 1280px;
       margin: 28px auto 6px;
@@ -283,17 +299,11 @@
       flex-direction: column;
       min-height: 300px;
       transition: box-shadow 0.2s;
-      position: relative;
       overflow: hidden;
     }
-    .quadrant.drag-over {
-      box-shadow: 0 0 0 2px var(--forest), var(--shadow);
-    }
+    .quadrant.drag-over { box-shadow: 0 0 0 2px var(--forest), var(--shadow); }
 
-    .q-top-stripe {
-      height: 3px;
-      width: 100%;
-    }
+    .q-top-stripe { height: 3px; width: 100%; }
     .quadrant[data-q="1"] .q-top-stripe { background: var(--accent-rose); }
     .quadrant[data-q="2"] .q-top-stripe { background: var(--accent-sage); }
     .quadrant[data-q="3"] .q-top-stripe { background: var(--accent-amber); }
@@ -319,7 +329,6 @@
       font-size: 1.25rem;
       font-weight: 500;
       color: var(--forest);
-      letter-spacing: -0.01em;
     }
     .q-desc {
       font-family: 'Cormorant Garamond', serif;
@@ -381,10 +390,7 @@
     .task-card:hover { box-shadow: 0 4px 16px rgba(42,56,40,0.1); transform: translateY(-1px); }
     .task-card.dragging { opacity: 0.35; cursor: grabbing; }
     .task-card.done { opacity: 0.5; }
-    .task-card.done .task-text {
-      text-decoration: line-through;
-      color: var(--muted);
-    }
+    .task-card.done .task-text { text-decoration: line-through; color: var(--muted); }
 
     .task-check {
       width: 17px; height: 17px;
@@ -394,7 +400,7 @@
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all 0.15s;
-      margin-top: 1px;
+      margin-top: 2px;
     }
     .task-card.done .task-check { border-color: transparent; }
     .quadrant[data-q="1"] .task-card.done .task-check { background: var(--accent-rose); }
@@ -443,33 +449,32 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
     }
-    .legend-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
+    .legend-item { display: flex; align-items: flex-start; gap: 8px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .legend-text { font-family: 'Cormorant Garamond', serif; font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+    .legend-text strong { display: block; color: var(--forest); font-weight: 600; font-size: 0.88rem; }
+
+    /* ── Error banner ── */
+    .error-banner {
+      max-width: 1280px;
+      margin: 12px auto 0;
+      padding: 0 48px;
+      display: none;
     }
-    .legend-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      margin-top: 4px;
-    }
-    .legend-text {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 0.82rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-    .legend-text strong {
-      display: block;
-      color: var(--forest);
-      font-weight: 600;
-      font-size: 0.88rem;
+    .error-banner.visible { display: block; }
+    .error-banner-inner {
+      background: #f5e8e3;
+      border: 1px solid #d4a898;
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 0.78rem;
+      color: var(--accent-rose);
+      font-family: 'Inter', sans-serif;
     }
 
     /* ── Responsive ── */
     @media (max-width: 780px) {
-      .topbar, .page-heading, .add-card, .filter-row, .axis-row, .matrix, .legend {
+      .topbar, .page-heading, .add-card, .filter-row, .axis-row, .matrix, .legend, .error-banner {
         padding-left: 20px;
         padding-right: 20px;
       }
@@ -477,7 +482,6 @@
       .legend { grid-template-columns: 1fr 1fr; }
     }
 
-    /* ── Animations ── */
     @keyframes fadeSlide {
       from { opacity: 0; transform: translateY(-5px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -487,6 +491,14 @@
 </head>
 <body>
 
+<!-- Loading overlay -->
+<div id="loadingOverlay">
+  <div class="loading-inner">
+    <div class="loading-icon">🌱</div>
+    <div class="loading-text">Loading your tasks…</div>
+  </div>
+</div>
+
 <!-- Progress bar -->
 <div class="progress-bar">
   <span class="progress-label">A quiet productivity space</span>
@@ -494,8 +506,16 @@
 
 <!-- Top bar -->
 <div class="topbar">
-  <div class="topbar-left">Task Garden &nbsp;·&nbsp; Eisenhower Matrix</div>
+  <div class="topbar-left">
+    <span class="sync-dot" id="syncDot"></span>
+    Task Garden &nbsp;·&nbsp; Eisenhower Matrix
+  </div>
   <div class="topbar-stats" id="headerStats"></div>
+</div>
+
+<!-- Error banner -->
+<div class="error-banner" id="errorBanner">
+  <div class="error-banner-inner" id="errorMsg"></div>
 </div>
 
 <!-- Heading -->
@@ -515,9 +535,7 @@
         <button type="button" class="q-btn" data-q="3">Delegate</button>
         <button type="button" class="q-btn" data-q="4">Eliminate</button>
       </div>
-      <button type="submit" class="add-btn">
-        Add &nbsp;→
-      </button>
+      <button type="submit" class="add-btn" id="addBtn">Add &nbsp;→</button>
     </form>
   </div>
 </div>
@@ -530,7 +548,7 @@
   <button class="clear-btn" id="clearDoneBtn">Clear completed</button>
 </div>
 
-<!-- Axis labels -->
+<!-- Axis -->
 <div class="axis-row">
   <span class="axis-label">← Urgent</span>
   <span class="axis-center">drag tasks between quadrants</span>
@@ -539,8 +557,7 @@
 
 <!-- Matrix -->
 <div class="matrix" id="matrixGrid">
-
-  <div class="quadrant" data-q="1" id="q1">
+  <div class="quadrant" data-q="1">
     <div class="q-top-stripe"></div>
     <div class="q-header">
       <div>
@@ -553,7 +570,7 @@
     <div class="task-list" id="list-1"></div>
   </div>
 
-  <div class="quadrant" data-q="2" id="q2">
+  <div class="quadrant" data-q="2">
     <div class="q-top-stripe"></div>
     <div class="q-header">
       <div>
@@ -566,7 +583,7 @@
     <div class="task-list" id="list-2"></div>
   </div>
 
-  <div class="quadrant" data-q="3" id="q3">
+  <div class="quadrant" data-q="3">
     <div class="q-top-stripe"></div>
     <div class="q-header">
       <div>
@@ -579,7 +596,7 @@
     <div class="task-list" id="list-3"></div>
   </div>
 
-  <div class="quadrant" data-q="4" id="q4">
+  <div class="quadrant" data-q="4">
     <div class="q-top-stripe"></div>
     <div class="q-header">
       <div>
@@ -591,14 +608,13 @@
     </div>
     <div class="task-list" id="list-4"></div>
   </div>
-
 </div>
 
 <!-- Legend -->
 <div class="legend">
   <div class="legend-item">
     <div class="legend-dot" style="background:#b5785f"></div>
-    <div class="legend-text"><strong>Do First</strong>Act on these now — they are urgent and matter.</div>
+    <div class="legend-text"><strong>Do First</strong>Act on these now.</div>
   </div>
   <div class="legend-item">
     <div class="legend-dot" style="background:#5c7a5a"></div>
@@ -606,7 +622,7 @@
   </div>
   <div class="legend-item">
     <div class="legend-dot" style="background:#a67c45"></div>
-    <div class="legend-text"><strong>Delegate</strong>Minimise or hand off. Others can handle these.</div>
+    <div class="legend-text"><strong>Delegate</strong>Hand off or minimise.</div>
   </div>
   <div class="legend-item">
     <div class="legend-dot" style="background:#7a8a8e"></div>
@@ -615,14 +631,40 @@
 </div>
 
 <script>
-  let tasks = JSON.parse(localStorage.getItem('tg-tasks') || '[]');
+  // ── Supabase ──
+  const SUPABASE_URL  = 'https://ykguuxvrfavmzmhfagmc.supabase.co';
+  const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrZ3V1eHZyZmF2bXptaGZhZ21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5ODk1NDQsImV4cCI6MjA5NDU2NTU0NH0.CSe_wddqHpn8QqZxy8w5uvZeWcLmKDFj90-a1RDC2tI';
+  const USER_ID       = 'noor';
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ── State ──
+  let tasks = [];
   let selectedQ = 1;
   let activeFilter = 'all';
   let dragSrc = null;
 
-  function save() { localStorage.setItem('tg-tasks', JSON.stringify(tasks)); }
-  function uid()  { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
-  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  // ── UI helpers ──
+  const syncDot   = document.getElementById('syncDot');
+  const errorBanner = document.getElementById('errorBanner');
+  const errorMsg  = document.getElementById('errorMsg');
+  const overlay   = document.getElementById('loadingOverlay');
+  const addBtn    = document.getElementById('addBtn');
+
+  function setSyncing(state) {
+    syncDot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorBanner.classList.add('visible');
+    setTimeout(() => errorBanner.classList.remove('visible'), 5000);
+  }
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 
   function matchFilter(t) {
     if (activeFilter === 'active') return !t.done;
@@ -630,6 +672,7 @@
     return true;
   }
 
+  // ── Render ──
   function render() {
     [1,2,3,4].forEach(q => {
       const list   = document.getElementById('list-' + q);
@@ -644,13 +687,12 @@
       } else {
         qtasks.forEach(t => list.appendChild(makeCard(t)));
       }
-      const active = tasks.filter(t => t.q === q && !t.done).length;
-      document.getElementById('badge-' + q).textContent = active;
+      document.getElementById('badge-' + q).textContent =
+        tasks.filter(t => t.q === q && !t.done).length;
     });
 
-    const total  = tasks.length;
     const done   = tasks.filter(t => t.done).length;
-    const active = total - done;
+    const active = tasks.length - done;
     document.getElementById('headerStats').innerHTML = `
       <div class="stat-pill"><strong>${active}</strong> active</div>
       <div class="stat-pill"><strong>${done}</strong> done</div>
@@ -678,16 +720,26 @@
       </div>
     `;
 
-    div.querySelector('.task-check').addEventListener('click', e => {
+    div.querySelector('.task-check').addEventListener('click', async e => {
       e.stopPropagation();
       const t = tasks.find(x => x.id === task.id);
-      if (t) { t.done = !t.done; save(); render(); }
+      if (!t) return;
+      t.done = !t.done;
+      render();
+      setSyncing('syncing');
+      const { error } = await db.from('tasks').update({ done: t.done, updated_at: Date.now() }).eq('id', t.id);
+      setSyncing(error ? 'error' : '');
+      if (error) { showError('Could not save. Check your connection.'); t.done = !t.done; render(); }
     });
 
-    div.querySelector('.task-del').addEventListener('click', e => {
+    div.querySelector('.task-del').addEventListener('click', async e => {
       e.stopPropagation();
       tasks = tasks.filter(x => x.id !== task.id);
-      save(); render();
+      render();
+      setSyncing('syncing');
+      const { error } = await db.from('tasks').delete().eq('id', task.id);
+      setSyncing(error ? 'error' : '');
+      if (error) { showError('Could not delete. Check your connection.'); await loadTasks(); }
     });
 
     div.addEventListener('dragstart', e => {
@@ -703,21 +755,66 @@
     return div;
   }
 
-  // Drag-and-drop on quadrants
+  // ── Drag-and-drop ──
   document.querySelectorAll('.quadrant').forEach(qEl => {
     qEl.addEventListener('dragover', e => { e.preventDefault(); qEl.classList.add('drag-over'); });
     qEl.addEventListener('dragleave', e => { if (!qEl.contains(e.relatedTarget)) qEl.classList.remove('drag-over'); });
-    qEl.addEventListener('drop', e => {
+    qEl.addEventListener('drop', async e => {
       e.preventDefault();
       qEl.classList.remove('drag-over');
       if (!dragSrc) return;
       const destQ = parseInt(qEl.dataset.q);
       const t = tasks.find(x => x.id === dragSrc);
-      if (t && t.q !== destQ) { t.q = destQ; save(); render(); }
+      if (!t || t.q === destQ) return;
+      t.q = destQ;
+      render();
+      setSyncing('syncing');
+      const { error } = await db.from('tasks').update({ q: destQ, updated_at: Date.now() }).eq('id', t.id);
+      setSyncing(error ? 'error' : '');
+      if (error) { showError('Could not move task. Check your connection.'); await loadTasks(); }
     });
   });
 
-  // Add form
+  // ── Load tasks ──
+  async function loadTasks() {
+    setSyncing('syncing');
+    const { data, error } = await db
+      .from('tasks')
+      .select('*')
+      .eq('user_id', USER_ID)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      setSyncing('error');
+      showError('Could not load tasks. Check your connection.');
+      return;
+    }
+    tasks = data || [];
+    setSyncing('');
+    render();
+  }
+
+  // ── Realtime ──
+  function subscribeRealtime() {
+    db.channel('tasks-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${USER_ID}` },
+        payload => {
+          if (payload.eventType === 'INSERT') {
+            if (!tasks.find(t => t.id === payload.new.id)) {
+              tasks.push(payload.new);
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const idx = tasks.findIndex(t => t.id === payload.new.id);
+            if (idx >= 0) tasks[idx] = payload.new;
+          } else if (payload.eventType === 'DELETE') {
+            tasks = tasks.filter(t => t.id !== payload.old.id);
+          }
+          render();
+        })
+      .subscribe();
+  }
+
+  // ── Add form ──
   document.querySelectorAll('.q-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('selected'));
@@ -726,17 +823,39 @@
     });
   });
 
-  document.getElementById('addForm').addEventListener('submit', e => {
+  document.getElementById('addForm').addEventListener('submit', async e => {
     e.preventDefault();
     const text = document.getElementById('taskInput').value.trim();
     if (!text) return;
-    tasks.push({ id: uid(), text, q: selectedQ, done: false, created: Date.now() });
-    save(); render();
+
+    addBtn.disabled = true;
+    const newTask = {
+      id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+      user_id: USER_ID,
+      text,
+      q: selectedQ,
+      done: false,
+      created_at: Date.now(),
+      updated_at: Date.now()
+    };
+
+    tasks.push(newTask);
+    render();
     document.getElementById('taskInput').value = '';
     document.getElementById('taskInput').focus();
+
+    setSyncing('syncing');
+    const { error } = await db.from('tasks').insert(newTask);
+    setSyncing(error ? 'error' : '');
+    if (error) {
+      showError('Could not save task. Check your connection.');
+      tasks = tasks.filter(t => t.id !== newTask.id);
+      render();
+    }
+    addBtn.disabled = false;
   });
 
-  // Filters
+  // ── Filters ──
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -746,16 +865,27 @@
     });
   });
 
-  document.getElementById('clearDoneBtn').addEventListener('click', () => {
-    const count = tasks.filter(t => t.done).length;
-    if (!count) return;
-    if (confirm(`Remove ${count} completed task${count > 1 ? 's' : ''}?`)) {
-      tasks = tasks.filter(t => !t.done);
-      save(); render();
-    }
+  document.getElementById('clearDoneBtn').addEventListener('click', async () => {
+    const toDelete = tasks.filter(t => t.done);
+    if (!toDelete.length) return;
+    if (!confirm(`Remove ${toDelete.length} completed task${toDelete.length > 1 ? 's' : ''}?`)) return;
+
+    const ids = toDelete.map(t => t.id);
+    tasks = tasks.filter(t => !t.done);
+    render();
+    setSyncing('syncing');
+    const { error } = await db.from('tasks').delete().in('id', ids);
+    setSyncing(error ? 'error' : '');
+    if (error) { showError('Could not clear tasks.'); await loadTasks(); }
   });
 
-  render();
+  // ── Init ──
+  (async () => {
+    await loadTasks();
+    subscribeRealtime();
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.remove(), 400);
+  })();
 </script>
 </body>
 </html>
