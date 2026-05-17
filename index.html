@@ -3,576 +3,757 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Task Garden 🌱</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <title>Task Garden — Eisenhower Matrix</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --do-bg: #fff1f1;
-      --do-border: #f87171;
-      --do-accent: #ef4444;
-      --do-badge: #ef4444;
-
-      --schedule-bg: #eff6ff;
-      --schedule-border: #60a5fa;
-      --schedule-accent: #3b82f6;
-      --schedule-badge: #3b82f6;
-
-      --delegate-bg: #fffbeb;
-      --delegate-border: #fbbf24;
-      --delegate-accent: #f59e0b;
-      --delegate-badge: #f59e0b;
-
-      --eliminate-bg: #f9fafb;
-      --eliminate-border: #9ca3af;
-      --eliminate-accent: #6b7280;
-      --eliminate-badge: #6b7280;
-
-      --surface: #ffffff;
-      --bg: #f3f4f6;
-      --text: #111827;
-      --text-muted: #6b7280;
-      --radius: 14px;
-      --shadow: 0 2px 16px rgba(0,0,0,0.07);
+      --cream: #eee8df;
+      --cream-dark: #e4ddd3;
+      --white: #ffffff;
+      --forest: #2a3828;
+      --forest-mid: #3d5239;
+      --muted: #8a9485;
+      --accent-rose: #b5785f;
+      --accent-sage: #5c7a5a;
+      --accent-amber: #a67c45;
+      --accent-slate: #7a8a8e;
+      --border: rgba(42,56,40,0.12);
+      --shadow: 0 2px 20px rgba(42,56,40,0.08);
+      --shadow-card: 0 1px 8px rgba(42,56,40,0.06);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-pill: 999px;
     }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--cream);
+      color: var(--forest);
       min-height: 100vh;
-      padding: 24px 16px 60px;
+      padding: 0 0 80px;
     }
 
-    /* ── Header ── */
-    header {
-      text-align: center;
-      margin-bottom: 32px;
+    /* ── Progress bar ── */
+    .progress-bar {
+      height: 1px;
+      background: var(--cream-dark);
+      position: relative;
+      width: 100%;
     }
-    header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      color: var(--text);
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      left: 0; top: 0;
+      height: 100%;
+      width: 18%;
+      background: var(--muted);
     }
-    header h1 span { color: #22c55e; }
-    header p {
-      margin-top: 6px;
-      font-size: 0.9rem;
-      color: var(--text-muted);
+    .progress-label {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 12px;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      letter-spacing: 0.01em;
     }
 
-    /* ── Add Task Bar ── */
-    .add-bar {
+    /* ── Top bar ── */
+    .topbar {
+      padding: 28px 48px 0;
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .topbar-left {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .topbar-stats {
+      display: flex;
+      gap: 6px;
+    }
+    .stat-pill {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--cream-dark);
+      border-radius: var(--radius-pill);
+      padding: 3px 10px;
+      letter-spacing: 0.02em;
+    }
+    .stat-pill strong { color: var(--forest); }
+
+    /* ── Page heading ── */
+    .page-heading {
+      max-width: 1280px;
+      margin: 32px auto 0;
+      padding: 0 48px;
+    }
+    .page-eyebrow {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      font-weight: 500;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: var(--forest);
+    }
+
+    /* ── Add task card ── */
+    .add-card {
+      max-width: 1280px;
+      margin: 32px auto 0;
+      padding: 0 48px;
+    }
+    .add-card-inner {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      box-shadow: var(--shadow);
+    }
+    .add-card-inner form {
       display: flex;
       gap: 10px;
-      max-width: 720px;
-      margin: 0 auto 32px;
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      box-shadow: var(--shadow);
       flex-wrap: wrap;
+      align-items: center;
     }
-    .add-bar input[type="text"] {
-      flex: 1 1 200px;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 9px 14px;
-      font-size: 0.92rem;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s;
-      color: var(--text);
-      background: #fafafa;
-    }
-    .add-bar input[type="text"]:focus { border-color: #6366f1; background: #fff; }
-    .add-bar input[type="text"]::placeholder { color: #9ca3af; }
-
-    .add-bar select {
-      flex: 0 0 auto;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 9px 14px;
-      font-size: 0.88rem;
-      font-family: inherit;
-      outline: none;
-      cursor: pointer;
-      background: #fafafa;
-      color: var(--text);
-      transition: border-color 0.2s;
-    }
-    .add-bar select:focus { border-color: #6366f1; }
-
-    .add-bar button {
-      flex: 0 0 auto;
-      background: #6366f1;
-      color: #fff;
+    .add-card-inner input[type="text"] {
+      flex: 1;
+      min-width: 200px;
+      background: transparent;
       border: none;
-      border-radius: 8px;
-      padding: 9px 22px;
-      font-size: 0.92rem;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 0;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      color: var(--forest);
+      outline: none;
+      transition: border-color 0.2s;
     }
-    .add-bar button:hover { background: #4f46e5; }
-    .add-bar button:active { transform: scale(0.97); }
+    .add-card-inner input[type="text"]:focus { border-bottom-color: var(--forest); }
+    .add-card-inner input[type="text"]::placeholder {
+      color: var(--muted);
+      font-style: italic;
+    }
+    .q-select {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .q-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--muted);
+      background: var(--cream);
+    }
+    .q-btn:hover { color: var(--forest); background: var(--cream-dark); }
+    .q-btn.selected[data-q="1"] { background: #f5e8e3; color: var(--accent-rose); border-color: #d4a898; }
+    .q-btn.selected[data-q="2"] { background: #e5ede4; color: var(--accent-sage); border-color: #9ab896; }
+    .q-btn.selected[data-q="3"] { background: #f0e9dc; color: var(--accent-amber); border-color: #c9aa7e; }
+    .q-btn.selected[data-q="4"] { background: #e4eaeb; color: var(--accent-slate); border-color: #a2b5b9; }
 
-    /* ── Matrix Grid ── */
+    .add-btn {
+      padding: 9px 22px;
+      background: var(--forest);
+      color: var(--cream);
+      border: none;
+      border-radius: var(--radius-pill);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .add-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .add-btn:active { transform: translateY(0); }
+
+    /* ── Filter row ── */
+    .filter-row {
+      max-width: 1280px;
+      margin: 20px auto 0;
+      padding: 0 48px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid transparent;
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { color: var(--forest); }
+    .filter-btn.active {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .clear-btn {
+      margin-left: auto;
+      padding: 5px 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(181,120,95,0.3);
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--accent-rose);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .clear-btn:hover { background: #f5e8e3; }
+
+    /* ── Axis labels ── */
+    .axis-row {
+      max-width: 1280px;
+      margin: 28px auto 6px;
+      padding: 0 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .axis-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .axis-center {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    /* ── Matrix grid ── */
     .matrix {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 48px;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto;
-      gap: 18px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    @media (max-width: 640px) {
-      .matrix { grid-template-columns: 1fr; }
-      header h1 { font-size: 1.5rem; }
+      gap: 16px;
     }
 
     /* ── Quadrant ── */
     .quadrant {
-      background: var(--surface);
+      background: var(--white);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       display: flex;
       flex-direction: column;
       min-height: 300px;
-      border-top: 4px solid transparent;
       transition: box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
     }
     .quadrant.drag-over {
-      box-shadow: 0 0 0 2px #6366f1, var(--shadow);
+      box-shadow: 0 0 0 2px var(--forest), var(--shadow);
     }
 
-    .quadrant[data-q="do"]       { border-color: var(--do-accent);       background: var(--do-bg); }
-    .quadrant[data-q="schedule"] { border-color: var(--schedule-accent);  background: var(--schedule-bg); }
-    .quadrant[data-q="delegate"] { border-color: var(--delegate-accent);  background: var(--delegate-bg); }
-    .quadrant[data-q="eliminate"]{ border-color: var(--eliminate-accent); background: var(--eliminate-bg); }
+    .q-top-stripe {
+      height: 3px;
+      width: 100%;
+    }
+    .quadrant[data-q="1"] .q-top-stripe { background: var(--accent-rose); }
+    .quadrant[data-q="2"] .q-top-stripe { background: var(--accent-sage); }
+    .quadrant[data-q="3"] .q-top-stripe { background: var(--accent-amber); }
+    .quadrant[data-q="4"] .q-top-stripe { background: var(--accent-slate); }
 
-    .quadrant-header {
+    .q-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .q-eyebrow {
+      font-size: 0.6rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .q-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--forest);
+      letter-spacing: -0.01em;
+    }
+    .q-desc {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .q-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: var(--radius-pill);
+      min-width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .quadrant[data-q="1"] .q-badge { background: #f5e8e3; color: var(--accent-rose); }
+    .quadrant[data-q="2"] .q-badge { background: #e5ede4; color: var(--accent-sage); }
+    .quadrant[data-q="3"] .q-badge { background: #f0e9dc; color: var(--accent-amber); }
+    .quadrant[data-q="4"] .q-badge { background: #e4eaeb; color: var(--accent-slate); }
+
+    /* ── Task list ── */
+    .task-list {
+      flex: 1;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .empty-state {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.9rem;
+      color: #c8c0b6;
+      text-align: center;
+      padding: 24px;
+      pointer-events: none;
+    }
+
+    /* ── Task card ── */
+    .task-card {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      padding: 18px 18px 12px;
-      border-bottom: 1px solid rgba(0,0,0,0.06);
-    }
-    .quadrant-icon { font-size: 1.4rem; line-height: 1; }
-    .quadrant-title-block { flex: 1; }
-    .quadrant-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.2;
-    }
-    .quadrant-subtitle {
-      font-size: 0.74rem;
-      font-weight: 500;
-      color: var(--text-muted);
-      margin-top: 2px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 22px;
-      height: 22px;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #fff;
-      padding: 0 6px;
-      flex-shrink: 0;
-    }
-    .quadrant[data-q="do"]        .badge { background: var(--do-badge); }
-    .quadrant[data-q="schedule"]  .badge { background: var(--schedule-badge); }
-    .quadrant[data-q="delegate"]  .badge { background: var(--delegate-badge); }
-    .quadrant[data-q="eliminate"] .badge { background: var(--eliminate-badge); }
-
-    /* ── Task List ── */
-    .task-list {
-      flex: 1;
-      padding: 12px 14px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-height: 60px;
-    }
-
-    .empty-state {
-      color: #c4c9d4;
-      font-size: 0.82rem;
-      text-align: center;
-      margin: auto;
-      padding: 20px 0;
-      user-select: none;
-    }
-
-    /* ── Task Item ── */
-    .task-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255,255,255,0.82);
-      border: 1px solid rgba(0,0,0,0.07);
-      border-radius: 9px;
-      padding: 10px 12px;
       cursor: grab;
-      transition: opacity 0.25s, transform 0.15s, box-shadow 0.15s;
+      transition: box-shadow 0.15s, opacity 0.2s, transform 0.12s;
       user-select: none;
-      backdrop-filter: blur(4px);
     }
-    .task-item:active { cursor: grabbing; }
-    .task-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.09); transform: translateY(-1px); }
-    .task-item.dragging { opacity: 0.35; transform: scale(0.97); }
-    .task-item.done .task-text {
+    .task-card:hover { box-shadow: 0 4px 16px rgba(42,56,40,0.1); transform: translateY(-1px); }
+    .task-card.dragging { opacity: 0.35; cursor: grabbing; }
+    .task-card.done { opacity: 0.5; }
+    .task-card.done .task-text {
       text-decoration: line-through;
-      color: #aab0be;
+      color: var(--muted);
     }
 
-    .task-checkbox {
-      width: 18px;
-      height: 18px;
+    .task-check {
+      width: 17px; height: 17px;
       border-radius: 50%;
-      border: 2px solid #cbd5e1;
+      border: 1.5px solid #c8c0b6;
       flex-shrink: 0;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: border-color 0.2s, background 0.2s;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      margin-top: 1px;
     }
-    .task-checkbox:hover { border-color: #6366f1; }
-    .task-item.done .task-checkbox {
-      background: #6366f1;
-      border-color: #6366f1;
-    }
-    .task-checkbox svg {
-      display: none;
-      width: 10px;
-      height: 10px;
-    }
-    .task-item.done .task-checkbox svg { display: block; }
+    .task-card.done .task-check { border-color: transparent; }
+    .quadrant[data-q="1"] .task-card.done .task-check { background: var(--accent-rose); }
+    .quadrant[data-q="2"] .task-card.done .task-check { background: var(--accent-sage); }
+    .quadrant[data-q="3"] .task-card.done .task-check { background: var(--accent-amber); }
+    .quadrant[data-q="4"] .task-card.done .task-check { background: var(--accent-slate); }
+    .task-check svg { display: none; }
+    .task-card.done .task-check svg { display: block; }
 
     .task-text {
       flex: 1;
-      font-size: 0.88rem;
-      color: var(--text);
-      line-height: 1.4;
-      word-break: break-word;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.98rem;
+      line-height: 1.5;
+      color: var(--forest);
     }
 
-    .task-delete {
+    .task-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.15s;
       flex-shrink: 0;
-      width: 22px;
-      height: 22px;
+    }
+    .task-card:hover .task-actions { opacity: 1; }
+
+    .task-del {
+      width: 22px; height: 22px;
       border-radius: 6px;
       border: none;
       background: transparent;
-      color: #c4c9d4;
+      color: #c8c0b6;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      transition: color 0.15s, background 0.15s;
-      opacity: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s;
+      padding: 0;
     }
-    .task-item:hover .task-delete { opacity: 1; }
-    .task-delete:hover { color: #ef4444; background: #fee2e2; }
+    .task-del:hover { background: #f5e8e3; color: var(--accent-rose); }
 
-    /* ── Axis Labels ── */
-    .axis-labels {
-      max-width: 1100px;
-      margin: 0 auto 8px;
+    /* ── Legend ── */
+    .legend {
+      max-width: 1280px;
+      margin: 24px auto 0;
+      padding: 0 48px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-      text-align: center;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
     }
-    .axis-label {
-      font-size: 0.72rem;
+    .legend-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .legend-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .legend-text strong {
+      display: block;
+      color: var(--forest);
       font-weight: 600;
-      color: #9ca3af;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 4px 0;
-      border-radius: 4px;
-    }
-    @media (max-width: 640px) {
-      .axis-labels { display: none; }
+      font-size: 0.88rem;
     }
 
-    /* ── Toast ── */
-    .toast {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: #1f2937;
-      color: #fff;
-      padding: 10px 22px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.22);
-      transition: transform 0.3s cubic-bezier(.34,1.4,.64,1);
-      z-index: 999;
-      white-space: nowrap;
+    /* ── Responsive ── */
+    @media (max-width: 780px) {
+      .topbar, .page-heading, .add-card, .filter-row, .axis-row, .matrix, .legend {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+      .matrix { grid-template-columns: 1fr; }
+      .legend { grid-template-columns: 1fr 1fr; }
     }
-    .toast.show { transform: translateX(-50%) translateY(0); }
 
-    /* Scrollbar */
-    .task-list::-webkit-scrollbar { width: 4px; }
-    .task-list::-webkit-scrollbar-thumb { background: #e2e5eb; border-radius: 4px; }
+    /* ── Animations ── */
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(-5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .task-card { animation: fadeSlide 0.18s ease; }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>Task <span>Garden</span> 🌱</h1>
-  <p>Focus on what matters — decide, schedule, delegate, or let go.</p>
-</header>
-
-<div class="add-bar">
-  <input type="text" id="taskInput" placeholder="What needs to be done?" maxlength="200" />
-  <select id="quadrantSelect">
-    <option value="do">🔴 Do First</option>
-    <option value="schedule">🔵 Schedule</option>
-    <option value="delegate">🟡 Delegate</option>
-    <option value="eliminate">⚫ Eliminate</option>
-  </select>
-  <button id="addBtn">Add Task</button>
+<!-- Progress bar -->
+<div class="progress-bar">
+  <span class="progress-label">A quiet productivity space</span>
 </div>
 
-<div class="axis-labels">
-  <div class="axis-label">⚡ Urgent</div>
-  <div class="axis-label">💤 Not Urgent</div>
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-left">Task Garden &nbsp;·&nbsp; Eisenhower Matrix</div>
+  <div class="topbar-stats" id="headerStats"></div>
 </div>
 
-<div class="matrix">
+<!-- Heading -->
+<div class="page-heading">
+  <div class="page-eyebrow">Your tasks, clearly arranged.</div>
+  <h1 class="page-title">What needs your<br>attention today?</h1>
+</div>
 
-  <div class="quadrant" data-q="do">
-    <div class="quadrant-header">
-      <div class="quadrant-icon">🔴</div>
-      <div class="quadrant-title-block">
-        <div class="quadrant-title">Do First</div>
-        <div class="quadrant-subtitle">Urgent · Important</div>
+<!-- Add task -->
+<div class="add-card">
+  <div class="add-card-inner">
+    <form id="addForm">
+      <input type="text" id="taskInput" placeholder="Describe a task…" autocomplete="off" />
+      <div class="q-select" id="qSelect">
+        <button type="button" class="q-btn selected" data-q="1">Do First</button>
+        <button type="button" class="q-btn" data-q="2">Schedule</button>
+        <button type="button" class="q-btn" data-q="3">Delegate</button>
+        <button type="button" class="q-btn" data-q="4">Eliminate</button>
       </div>
-      <span class="badge" id="badge-do">0</span>
+      <button type="submit" class="add-btn">
+        Add &nbsp;→
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-row">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="active">Active</button>
+  <button class="filter-btn" data-filter="done">Done</button>
+  <button class="clear-btn" id="clearDoneBtn">Clear completed</button>
+</div>
+
+<!-- Axis labels -->
+<div class="axis-row">
+  <span class="axis-label">← Urgent</span>
+  <span class="axis-center">drag tasks between quadrants</span>
+  <span class="axis-label">Not Urgent →</span>
+</div>
+
+<!-- Matrix -->
+<div class="matrix" id="matrixGrid">
+
+  <div class="quadrant" data-q="1" id="q1">
+    <div class="q-top-stripe"></div>
+    <div class="q-header">
+      <div>
+        <div class="q-eyebrow">Quadrant I &nbsp;·&nbsp; Urgent + Important</div>
+        <div class="q-name">Do First</div>
+        <div class="q-desc">Crises, deadlines, fires</div>
+      </div>
+      <div class="q-badge" id="badge-1">0</div>
     </div>
-    <div class="task-list" id="list-do"></div>
+    <div class="task-list" id="list-1"></div>
   </div>
 
-  <div class="quadrant" data-q="schedule">
-    <div class="quadrant-header">
-      <div class="quadrant-icon">🔵</div>
-      <div class="quadrant-title-block">
-        <div class="quadrant-title">Schedule</div>
-        <div class="quadrant-subtitle">Not Urgent · Important</div>
+  <div class="quadrant" data-q="2" id="q2">
+    <div class="q-top-stripe"></div>
+    <div class="q-header">
+      <div>
+        <div class="q-eyebrow">Quadrant II &nbsp;·&nbsp; Not Urgent + Important</div>
+        <div class="q-name">Schedule</div>
+        <div class="q-desc">Growth, goals, planning</div>
       </div>
-      <span class="badge" id="badge-schedule">0</span>
+      <div class="q-badge" id="badge-2">0</div>
     </div>
-    <div class="task-list" id="list-schedule"></div>
+    <div class="task-list" id="list-2"></div>
   </div>
 
-  <div class="quadrant" data-q="delegate">
-    <div class="quadrant-header">
-      <div class="quadrant-icon">🟡</div>
-      <div class="quadrant-title-block">
-        <div class="quadrant-title">Delegate</div>
-        <div class="quadrant-subtitle">Urgent · Not Important</div>
+  <div class="quadrant" data-q="3" id="q3">
+    <div class="q-top-stripe"></div>
+    <div class="q-header">
+      <div>
+        <div class="q-eyebrow">Quadrant III &nbsp;·&nbsp; Urgent + Not Important</div>
+        <div class="q-name">Delegate</div>
+        <div class="q-desc">Interruptions, busywork</div>
       </div>
-      <span class="badge" id="badge-delegate">0</span>
+      <div class="q-badge" id="badge-3">0</div>
     </div>
-    <div class="task-list" id="list-delegate"></div>
+    <div class="task-list" id="list-3"></div>
   </div>
 
-  <div class="quadrant" data-q="eliminate">
-    <div class="quadrant-header">
-      <div class="quadrant-icon">⚫</div>
-      <div class="quadrant-title-block">
-        <div class="quadrant-title">Eliminate</div>
-        <div class="quadrant-subtitle">Not Urgent · Not Important</div>
+  <div class="quadrant" data-q="4" id="q4">
+    <div class="q-top-stripe"></div>
+    <div class="q-header">
+      <div>
+        <div class="q-eyebrow">Quadrant IV &nbsp;·&nbsp; Not Urgent + Not Important</div>
+        <div class="q-name">Eliminate</div>
+        <div class="q-desc">Distractions, time-wasters</div>
       </div>
-      <span class="badge" id="badge-eliminate">0</span>
+      <div class="q-badge" id="badge-4">0</div>
     </div>
-    <div class="task-list" id="list-eliminate"></div>
+    <div class="task-list" id="list-4"></div>
   </div>
 
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#b5785f"></div>
+    <div class="legend-text"><strong>Do First</strong>Act on these now — they are urgent and matter.</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#5c7a5a"></div>
+    <div class="legend-text"><strong>Schedule</strong>Block time. These shape your future.</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#a67c45"></div>
+    <div class="legend-text"><strong>Delegate</strong>Minimise or hand off. Others can handle these.</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#7a8a8e"></div>
+    <div class="legend-text"><strong>Eliminate</strong>Let go. These don't serve you.</div>
+  </div>
+</div>
 
 <script>
-  // ── State ──────────────────────────────────────────────────────────
-  const STORAGE_KEY = 'task-garden-v1';
-  let tasks = [];
-  let draggedId = null;
+  let tasks = JSON.parse(localStorage.getItem('tg-tasks') || '[]');
+  let selectedQ = 1;
+  let activeFilter = 'all';
+  let dragSrc = null;
 
-  function load() {
-    try { tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { tasks = []; }
+  function save() { localStorage.setItem('tg-tasks', JSON.stringify(tasks)); }
+  function uid()  { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function matchFilter(t) {
+    if (activeFilter === 'active') return !t.done;
+    if (activeFilter === 'done')   return  t.done;
+    return true;
   }
-  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
-
-  // ── Render ─────────────────────────────────────────────────────────
-  const QUADRANTS = ['do', 'schedule', 'delegate', 'eliminate'];
 
   function render() {
-    QUADRANTS.forEach(q => {
-      const list = document.getElementById('list-' + q);
-      const badge = document.getElementById('badge-' + q);
-      const qTasks = tasks.filter(t => t.quadrant === q);
-
-      badge.textContent = qTasks.filter(t => !t.done).length;
-
-      if (qTasks.length === 0) {
-        list.innerHTML = '<div class="empty-state">Drop tasks here</div>';
+    [1,2,3,4].forEach(q => {
+      const list   = document.getElementById('list-' + q);
+      const qtasks = tasks.filter(t => t.q === q && matchFilter(t));
+      list.innerHTML = '';
+      if (qtasks.length === 0) {
+        const em = document.createElement('div');
+        em.className = 'empty-state';
+        em.textContent = activeFilter === 'done'   ? 'Nothing completed here yet.' :
+                         activeFilter === 'active' ? 'All clear.' : 'No tasks yet.';
+        list.appendChild(em);
       } else {
-        list.innerHTML = '';
-        qTasks.forEach(t => {
-          const el = buildTaskEl(t);
-          list.appendChild(el);
-        });
+        qtasks.forEach(t => list.appendChild(makeCard(t)));
       }
+      const active = tasks.filter(t => t.q === q && !t.done).length;
+      document.getElementById('badge-' + q).textContent = active;
     });
+
+    const total  = tasks.length;
+    const done   = tasks.filter(t => t.done).length;
+    const active = total - done;
+    document.getElementById('headerStats').innerHTML = `
+      <div class="stat-pill"><strong>${active}</strong> active</div>
+      <div class="stat-pill"><strong>${done}</strong> done</div>
+    `;
   }
 
-  function buildTaskEl(task) {
+  function makeCard(task) {
     const div = document.createElement('div');
-    div.className = 'task-item' + (task.done ? ' done' : '');
-    div.dataset.id = task.id;
+    div.className = 'task-card' + (task.done ? ' done' : '');
     div.draggable = true;
-
+    div.dataset.id = task.id;
     div.innerHTML = `
-      <div class="task-checkbox" data-id="${task.id}" title="Mark complete">
-        <svg viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 4L3.8 7L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <div class="task-check" title="Mark complete">
+        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+          <path d="M1 3.5L3 5.5L8 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <span class="task-text">${escHtml(task.text)}</span>
-      <button class="task-delete" data-id="${task.id}" title="Delete">✕</button>
+      <span class="task-text">${esc(task.text)}</span>
+      <div class="task-actions">
+        <button class="task-del" title="Delete">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
     `;
 
-    // Checkbox toggle
-    div.querySelector('.task-checkbox').addEventListener('click', e => {
+    div.querySelector('.task-check').addEventListener('click', e => {
       e.stopPropagation();
-      toggleDone(task.id);
-    });
-    // Delete
-    div.querySelector('.task-delete').addEventListener('click', e => {
-      e.stopPropagation();
-      deleteTask(task.id);
+      const t = tasks.find(x => x.id === task.id);
+      if (t) { t.done = !t.done; save(); render(); }
     });
 
-    // Drag
+    div.querySelector('.task-del').addEventListener('click', e => {
+      e.stopPropagation();
+      tasks = tasks.filter(x => x.id !== task.id);
+      save(); render();
+    });
+
     div.addEventListener('dragstart', e => {
-      draggedId = task.id;
+      dragSrc = task.id;
       setTimeout(() => div.classList.add('dragging'), 0);
       e.dataTransfer.effectAllowed = 'move';
     });
     div.addEventListener('dragend', () => {
       div.classList.remove('dragging');
-      draggedId = null;
+      dragSrc = null;
+      document.querySelectorAll('.quadrant').forEach(q => q.classList.remove('drag-over'));
     });
-
     return div;
   }
 
-  function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  // ── Actions ────────────────────────────────────────────────────────
-  function addTask(text, quadrant) {
-    tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), text, quadrant, done: false, createdAt: Date.now() });
-    save(); render();
-  }
-  function toggleDone(id) {
-    const t = tasks.find(t => t.id === id);
-    if (t) { t.done = !t.done; save(); render(); }
-  }
-  function deleteTask(id) {
-    tasks = tasks.filter(t => t.id !== id);
-    save(); render(); showToast('Task deleted');
-  }
-  function moveTask(id, toQuadrant) {
-    const t = tasks.find(t => t.id === id);
-    if (t && t.quadrant !== toQuadrant) {
-      t.quadrant = toQuadrant;
-      save(); render();
-      const names = { do: 'Do First', schedule: 'Schedule', delegate: 'Delegate', eliminate: 'Eliminate' };
-      showToast('Moved to ' + names[toQuadrant]);
-    }
-  }
-
-  // ── Add Bar ────────────────────────────────────────────────────────
-  const input = document.getElementById('taskInput');
-  const select = document.getElementById('quadrantSelect');
-  const addBtn = document.getElementById('addBtn');
-
-  function handleAdd() {
-    const text = input.value.trim();
-    if (!text) { input.focus(); return; }
-    addTask(text, select.value);
-    input.value = '';
-    input.focus();
-  }
-
-  addBtn.addEventListener('click', handleAdd);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') handleAdd(); });
-
-  // ── Drag & Drop on Quadrants ───────────────────────────────────────
+  // Drag-and-drop on quadrants
   document.querySelectorAll('.quadrant').forEach(qEl => {
-    qEl.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      qEl.classList.add('drag-over');
-    });
-    qEl.addEventListener('dragleave', e => {
-      if (!qEl.contains(e.relatedTarget)) qEl.classList.remove('drag-over');
-    });
+    qEl.addEventListener('dragover', e => { e.preventDefault(); qEl.classList.add('drag-over'); });
+    qEl.addEventListener('dragleave', e => { if (!qEl.contains(e.relatedTarget)) qEl.classList.remove('drag-over'); });
     qEl.addEventListener('drop', e => {
       e.preventDefault();
       qEl.classList.remove('drag-over');
-      if (draggedId) moveTask(draggedId, qEl.dataset.q);
+      if (!dragSrc) return;
+      const destQ = parseInt(qEl.dataset.q);
+      const t = tasks.find(x => x.id === dragSrc);
+      if (t && t.q !== destQ) { t.q = destQ; save(); render(); }
     });
   });
 
-  // ── Toast ──────────────────────────────────────────────────────────
-  let toastTimer;
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
-  }
+  // Add form
+  document.querySelectorAll('.q-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedQ = parseInt(btn.dataset.q);
+    });
+  });
 
-  // ── Init ───────────────────────────────────────────────────────────
-  load();
+  document.getElementById('addForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const text = document.getElementById('taskInput').value.trim();
+    if (!text) return;
+    tasks.push({ id: uid(), text, q: selectedQ, done: false, created: Date.now() });
+    save(); render();
+    document.getElementById('taskInput').value = '';
+    document.getElementById('taskInput').focus();
+  });
 
-  // Seed with examples if empty
-  if (tasks.length === 0) {
-    tasks = [
-      { id: 'seed1', text: 'Review urgent client proposal', quadrant: 'do', done: false, createdAt: Date.now() },
-      { id: 'seed2', text: 'Plan next quarter roadmap', quadrant: 'schedule', done: false, createdAt: Date.now() },
-      { id: 'seed3', text: 'Reply to non-critical emails', quadrant: 'delegate', done: false, createdAt: Date.now() },
-      { id: 'seed4', text: 'Scroll social media feed', quadrant: 'eliminate', done: false, createdAt: Date.now() },
-    ];
-    save();
-  }
+  // Filters
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      render();
+    });
+  });
+
+  document.getElementById('clearDoneBtn').addEventListener('click', () => {
+    const count = tasks.filter(t => t.done).length;
+    if (!count) return;
+    if (confirm(`Remove ${count} completed task${count > 1 ? 's' : ''}?`)) {
+      tasks = tasks.filter(t => !t.done);
+      save(); render();
+    }
+  });
 
   render();
 </script>
